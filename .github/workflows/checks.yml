@@ -1,0 +1,22 @@
+name: Check overlay tools and archive
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  tooling:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: python3 -m unittest discover -s tests -v
+  archive:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Compile independent archive and exercise real disk persistence
+        run: |
+          mkdir -p build
+          swiftc -warnings-as-errors Sources/AyuHistoryStore.swift tests/swift/main.swift -o build/archive-checks
+          build/archive-checks
