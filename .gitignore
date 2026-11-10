@@ -1,0 +1,9 @@
+upstream/
+build/
+dist/
+.local/
+__pycache__/
+*.pyc
+*.p12
+*.mobileprovision
+*.ipa
