@@ -1,0 +1,38 @@
+name: Build Ayu Personal device IPA
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  build:
+    runs-on: xcode-27
+    timeout-minutes: 360
+    env:
+      TELEGRAM_API_ID: ${{ secrets.TELEGRAM_API_ID }}
+      TELEGRAM_API_HASH: ${{ secrets.TELEGRAM_API_HASH }}
+      AYU_BUNDLE_ID: ${{ vars.AYU_BUNDLE_ID || 'org.personal.ayupersonal' }}
+      APPLE_TEAM_ID: ${{ vars.APPLE_TEAM_ID || '0000000000' }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Select matching installed Xcode
+        shell: bash
+        run: |
+          set -euo pipefail
+          required=$(python3 -c 'import json; print(json.load(open("upstream.lock.json"))["xcode"])')
+          for app in /Applications/Xcode*.app; do
+            if [ "$(DEVELOPER_DIR="$app/Contents/Developer" xcodebuild -version | head -n 1)" = "Xcode $required" ]; then
+              sudo xcode-select --switch "$app/Contents/Developer"
+              exit 0
+            fi
+          done
+          echo "Required Xcode $required is absent from this runner. Select a compatible runner before building."
+          exit 1
+      - name: Build and inspect arm64 IPA
+        run: python3 scripts/build_macos.py
+      - name: Upload device build
+        uses: actions/upload-artifact@v4
+        with:
+          name: AyuPersonal-unsigned-IPA
+          path: dist/AyuPersonal-unsigned.ipa
+          if-no-files-found: error
+          retention-days: 7
