@@ -88,7 +88,7 @@ func ayuPrefetchTimedMedia(mediaBox: MediaBox, messages: [StoreMessage]) {
     let pending = resources
     DispatchQueue.global(qos: .utility).async {
         for resource in pending {
-            _ = mediaBox.fetchedResource(resource, parameters: nil).startStandalone(error: { _ in })
+            mediaBox.fetchedResource(resource, parameters: nil).startStandalone(error: { _ in })
         }
     }
 }
