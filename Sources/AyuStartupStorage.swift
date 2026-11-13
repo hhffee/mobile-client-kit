@@ -6,6 +6,54 @@ import UIKit
 // Keep its database in the app sandbox and its credentials in an explicit,
 // OS-assigned keychain group. Never fall back after a keychain read failure.
 struct AyuStartupStorage {
+    // A noninteractive overlay leaves Telegram's window/controller ownership intact.
+    // Stage names contain no account, session, or message data.
+    private static var startupView: UITextView?
+    private static var stage = ""
+    private static var startedAt = Date()
+
+    static func begin(in window: UIWindow) {
+        startedAt = Date()
+        let text = UITextView()
+        text.isEditable = false
+        text.isUserInteractionEnabled = false
+        text.backgroundColor = .systemBackground
+        text.textColor = .label
+        text.font = .preferredFont(forTextStyle: .body)
+        text.translatesAutoresizingMaskIntoConstraints = false
+        window.addSubview(text)
+        NSLayoutConstraint.activate([
+            text.leadingAnchor.constraint(equalTo: window.safeAreaLayoutGuide.leadingAnchor, constant: 16),
+            text.trailingAnchor.constraint(equalTo: window.safeAreaLayoutGuide.trailingAnchor, constant: -16),
+            text.topAnchor.constraint(equalTo: window.safeAreaLayoutGuide.topAnchor, constant: 16),
+            text.heightAnchor.constraint(equalToConstant: 240)
+        ])
+        startupView = text
+        mark("window-created")
+        DispatchQueue.main.asyncAfter(deadline: .now() + 20) {
+            guard let text = startupView else { return }
+            text.text = diagnosticText + "\n\nЗапуск ещё не завершён. Сохрани снимок этого экрана для диагностики."
+            window.bringSubviewToFront(text)
+        }
+    }
+
+    private static var diagnosticText: String {
+        let version = Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion") as? String ?? "unknown"
+        return "Ayu Personal · запуск\n\nЭтап: \(stage)\nСборка: \(version)\niOS: \(UIDevice.current.systemVersion)\nВремя: \(Int(Date().timeIntervalSince(startedAt))) с"
+    }
+
+    static func mark(_ value: String) {
+        stage = value
+        startupView?.text = diagnosticText
+        NSLog("[AyuStartup] %@", value)
+    }
+
+    static func finish() {
+        mark("interface-ready")
+        startupView?.removeFromSuperview()
+        startupView = nil
+    }
+
     let url: URL
     let isolatedKeychainAccessGroup: String?
 
@@ -60,6 +108,7 @@ struct AyuStartupStorage {
 
     static func showFailure(_ error: Error, in window: UIWindow?) {
         guard let window = window else { return }
+        finish()
         let failure = error as NSError
         let controller = UIViewController()
         controller.view.backgroundColor = .systemBackground
