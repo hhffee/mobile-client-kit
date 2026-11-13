@@ -90,14 +90,14 @@ def prepare(source: Path, unsigned: bool = False) -> None:
 
     edit(PEER + "PeerInfoScreen.swift", "enum PeerInfoSettingsSection {\n", "enum PeerInfoSettingsSection {\n    case ayuPersonal\n")
     edit(PEER + "PeerInfoSettingsItems.swift", "    let notificationsWarning: Bool\n",
-         "    items[.advanced]!.append(PeerInfoScreenDisclosureItem(id: 9001, text: \"Ayu Personal\", icon: PresentationResourcesSettings.security, action: {\n        interaction.openSettings(.ayuPersonal)\n    }))\n\n    let notificationsWarning: Bool\n")
+         "    items[.advanced]!.append(PeerInfoScreenDisclosureItem(id: 9001, text: \"karigram\", icon: PresentationResourcesSettings.security, action: {\n        interaction.openSettings(.ayuPersonal)\n    }))\n\n    let notificationsWarning: Bool\n")
     edit(PEER + "PeerInfoScreenSettingsActions.swift", "        switch section {\n        case .avatar:",
          "        switch section {\n        case .ayuPersonal:\n            let settings = AyuSettingsController(accountId: self.context.account.peerId.toInt64())\n            let navigation = UINavigationController(rootViewController: settings)\n            self.controller?.present(navigation, animated: true)\n        case .avatar:")
 
     edit("Telegram/BUILD", "    <string>Telegram</string>\n    <key>CFBundleIdentifier</key>\n    <string>{telegram_bundle_id}</string>",
-         "    <string>Ayu Personal</string>\n    <key>CFBundleIdentifier</key>\n    <string>{telegram_bundle_id}</string>")
+         "    <string>karigram</string>\n    <key>CFBundleIdentifier</key>\n    <string>{telegram_bundle_id}</string>")
     edit("Telegram/BUILD", 'name = "AppNameInfoPlist",\n    extension = "plist",\n    template =\n    """\n    <key>CFBundleDisplayName</key>\n    <string>Telegram</string>',
-         'name = "AppNameInfoPlist",\n    extension = "plist",\n    template =\n    """\n    <key>CFBundleDisplayName</key>\n    <string>Ayu Personal</string>')
+         'name = "AppNameInfoPlist",\n    extension = "plist",\n    template =\n    """\n    <key>CFBundleDisplayName</key>\n    <string>karigram</string>')
     icon = "Telegram/Telegram-iOS/Telegram.icon/icon.json"
     edit(icon, "display-p3:0.21569,0.68627,0.89020,1.00000", "display-p3:0.58039,0.32549,0.92157,1.00000")
     edit(icon, "srgb:0.11373,0.57647,0.82353,1.00000", "srgb:0.29020,0.16078,0.60784,1.00000")
