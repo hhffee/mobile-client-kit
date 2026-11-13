@@ -39,7 +39,7 @@ struct AyuStartupStorage {
 
     private static var diagnosticText: String {
         let version = Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion") as? String ?? "unknown"
-        return "Ayu Personal · запуск\n\nЭтап: \(stage)\nСборка: \(version)\niOS: \(UIDevice.current.systemVersion)\nВремя: \(Int(Date().timeIntervalSince(startedAt))) с"
+        return "karigram · запуск\n\nЭтап: \(stage)\nСборка: \(version)\niOS: \(UIDevice.current.systemVersion)\nВремя: \(Int(Date().timeIntervalSince(startedAt))) с"
     }
 
     static func mark(_ value: String) {
@@ -115,7 +115,7 @@ struct AyuStartupStorage {
         let text = UITextView()
         text.isEditable = false
         text.font = .preferredFont(forTextStyle: .body)
-        text.text = "Ayu Personal\n\nНе удалось открыть защищённое хранилище.\n\nКод: \(failure.domain) \(failure.code)\nПриложение: \(Bundle.main.bundleIdentifier ?? "unknown")\niOS: \(UIDevice.current.systemVersion)\n\nСделай снимок этого экрана и пришли его для исправления."
+        text.text = "karigram\n\nНе удалось открыть защищённое хранилище.\n\nКод: \(failure.domain) \(failure.code)\nПриложение: \(Bundle.main.bundleIdentifier ?? "unknown")\niOS: \(UIDevice.current.systemVersion)\n\nСделай снимок этого экрана и пришли его для исправления."
         text.translatesAutoresizingMaskIntoConstraints = false
         controller.view.addSubview(text)
         NSLayoutConstraint.activate([
