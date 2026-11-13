@@ -16,7 +16,7 @@ final class AyuSettingsController: UITableViewController {
     init(accountId: Int64) {
         self.accountId = accountId
         super.init(style: .insetGrouped)
-        self.title = "Ayu Personal"
+        self.title = "karigram"
     }
     required init?(coder: NSCoder) { fatalError("init(coder:) has not been implemented") }
 
@@ -58,7 +58,7 @@ final class AyuSettingsController: UITableViewController {
             cell.textLabel?.textColor = indexPath.row == 0 ? .label : .systemRed
             cell.accessoryType = indexPath.row == 0 ? .disclosureIndicator : .none
         } else {
-            cell.textLabel?.text = "Ayu Personal · версия разработки"
+            cell.textLabel?.text = "karigram · версия разработки"
             cell.selectionStyle = .none
         }
         return cell
