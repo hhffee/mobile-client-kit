@@ -73,8 +73,11 @@ public final class Transaction {
         }
     }
 }
+public protocol Disposable { func dispose() }
+private final class FakeDisposable: Disposable { func dispose() {} }
 public final class FakeFetch {
-    func startStandalone(error: (Error) -> Void) {}
+    // Matches the pinned SwiftSignalKit Signal.startStandalone return contract.
+    func startStandalone(error: (Error) -> Void) -> Disposable { FakeDisposable() }
 }
 public final class MediaBox {
     func fetchedResource(_ resource: MediaResource, parameters: Int?) -> FakeFetch { FakeFetch() }
