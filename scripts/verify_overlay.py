@@ -12,6 +12,7 @@ ROOT = Path(__file__).resolve().parents[1]
 CORE = "submodules/TelegramCore/Sources/"
 PEER = "submodules/TelegramUI/Components/PeerInfo/PeerInfoScreen/Sources/"
 PATHS = [
+    "submodules/TelegramUI/Sources/AppDelegate.swift", "submodules/PasscodeCore/Sources/Passcode.swift",
     "build-system/Make/Make.py", "docs/state-sync.md", "Telegram/BUILD",
     "Telegram/Telegram-iOS/Telegram.icon/icon.json",
     CORE + "State/ManagedAccountPresence.swift",
@@ -72,3 +73,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
