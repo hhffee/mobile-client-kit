@@ -20,3 +20,6 @@ jobs:
           mkdir -p build
           swiftc -warnings-as-errors Sources/AyuHistoryStore.swift tests/swift/main.swift -o build/archive-checks
           build/archive-checks
+      - name: Exercise retained bubbles and timed media attributes
+        run: python3 scripts/test_retention_swift.py
+
