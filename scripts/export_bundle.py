@@ -13,6 +13,7 @@ def main():
     output.mkdir(exist_ok=True)
     patch = subprocess.check_output(["git", "-C", str(UPSTREAM), "-c", "core.autocrlf=false", "diff", "--binary"], text=True, encoding="utf-8")
     added = [
+        "submodules/TelegramUI/Sources/AyuStartupStorage.swift",
         "submodules/TelegramCore/Sources/AyuSettings.swift",
         "submodules/TelegramCore/Sources/AyuHistoryStore.swift",
         "submodules/TelegramCore/Sources/AyuHistoryBridge.swift",
@@ -38,3 +39,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
