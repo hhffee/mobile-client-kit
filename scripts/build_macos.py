@@ -76,7 +76,7 @@ def main():
     artifact = source / "bazel-bin/Telegram/Telegram.ipa"
     if not artifact.is_file():
         raise SystemExit("Build returned success but no device IPA exists")
-    destination = ROOT / "dist/AyuPersonal-unsigned.ipa"
+    destination = ROOT / "dist/karigram-unsigned.ipa"
     destination.parent.mkdir(exist_ok=True)
     shutil.copyfile(artifact, destination)
     run([sys.executable, ROOT / "scripts/inspect_ipa.py", destination])
