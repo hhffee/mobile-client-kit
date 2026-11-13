@@ -27,6 +27,8 @@ jobs:
           done
           echo "Required Xcode $required is absent from this runner. Select a compatible runner before building."
           exit 1
+      - name: Typecheck startup storage with the device SDK
+        run: xcrun --sdk iphoneos swiftc -typecheck -warnings-as-errors -target arm64-apple-ios15.0 -sdk "$(xcrun --sdk iphoneos --show-sdk-path)" Sources/AyuStartupStorage.swift
       - name: Build and inspect arm64 IPA
         run: python3 scripts/build_macos.py
       - name: Upload device build
@@ -36,3 +38,4 @@ jobs:
           path: dist/AyuPersonal-unsigned.ipa
           if-no-files-found: error
           retention-days: 7
+
