@@ -104,6 +104,54 @@ def prepare(source: Path, unsigned: bool = False) -> None:
     edit(icon, "srgb:0.00000,0.47843,1.00000,1.00000", "srgb:0.44314,0.26275,0.82745,1.00000")
 
     if unsigned:
+        app_delegate = "submodules/TelegramUI/Sources/AppDelegate.swift"
+        passcode = "submodules/PasscodeCore/Sources/Passcode.swift"
+        # This build has no extensions. Preserve the upstream shared-container
+        # path when entitled; otherwise select a stable app-private container.
+        edit(app_delegate,
+             '''        try! PasscodeEnvironment.shared.configure(PasscodeConfiguration(appGroupIdentifier: appGroupName, processRole: .mainApp, biometricKeychainService: walletBiometricKeychainService), privateAccessGroup: {
+            BuildConfig.keychainAccessGroup(baseAppBundleId: baseAppBundleId)
+        })
+        let maybeAppGroupUrl = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: appGroupName)''',
+             '''        let ayuStorage: AyuStartupStorage
+        do {
+            ayuStorage = try AyuStartupStorage.resolve(appGroupName: appGroupName)
+            try PasscodeEnvironment.shared.configure(PasscodeConfiguration(appGroupIdentifier: appGroupName, processRole: .mainApp, biometricKeychainService: walletBiometricKeychainService, isolatedKeychainAccessGroup: ayuStorage.isolatedKeychainAccessGroup), privateAccessGroup: {
+                BuildConfig.keychainAccessGroup(baseAppBundleId: baseAppBundleId)
+            })
+        } catch {
+            AyuStartupStorage.showFailure(error, in: self.nativeWindow)
+            return true
+        }''')
+        edit(app_delegate,
+             '''        guard let appGroupUrl = maybeAppGroupUrl else {
+            self.mainWindow?.presentNative(UIAlertController(title: nil, message: "Error 2", preferredStyle: .alert))
+            return true
+        }''',
+             '''        let appGroupUrl = ayuStorage.url''')
+        edit(app_delegate, "        if !isUITest {\n            performAppGroupUpgrades(",
+             "        if !isUITest && ayuStorage.isolatedKeychainAccessGroup == nil {\n            performAppGroupUpgrades(")
+        edit(app_delegate, "        configuration.sharedContainerIdentifier = appGroupName",
+             "        if !UserDefaults.standard.bool(forKey: \"AyuPersonal.privateStorage.v1\"), FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: appGroupName) != nil {\n            configuration.sharedContainerIdentifier = appGroupName\n        }")
+        # Use the actual app-private group for both credential kinds while
+        # keeping all existing accessibility, biometric ACLs and lock logic.
+        edit(passcode, "    public let keychainScope: String?\n",
+             "    public let keychainScope: String?\n    public let isolatedKeychainAccessGroup: String?\n")
+        edit(passcode, "keychainScope: String? = nil) {",
+             "keychainScope: String? = nil, isolatedKeychainAccessGroup: String? = nil) {")
+        edit(passcode, "        self.keychainScope = keychainScope\n",
+             "        self.keychainScope = keychainScope\n        self.isolatedKeychainAccessGroup = isolatedKeychainAccessGroup\n")
+        edit(passcode, "        if let current = self.configuration {",
+             '''        if let group = configuration.isolatedKeychainAccessGroup {
+            guard configuration.processRole == .mainApp, !group.isEmpty, !group.hasPrefix("group.") else {
+                throw PasscodeError.unavailable
+            }
+        }
+        if let current = self.configuration {''')
+        edit(passcode, "        return configuration.appGroupIdentifier",
+             "        return configuration.isolatedKeychainAccessGroup ?? configuration.appGroupIdentifier")
+        edit(passcode, "        if let group = self.resolvedPrivateAccessGroup { return group }",
+             "        if let group = configuration.isolatedKeychainAccessGroup { return group }\n        if let group = self.resolvedPrivateAccessGroup { return group }")
         # A separate, opt-in build mode; never disable signing for normal Telegram builds.
         # rules_apple's disable_legacy_signing bypasses signing and profile validation. GBox
         # must later provide a valid device signature and matching entitlement profile.
@@ -115,6 +163,8 @@ def prepare(source: Path, unsigned: bool = False) -> None:
         edits[docs] = (source / docs).read_text(encoding="utf-8") + "\n\n## Personal Ayu overlay\n\nCloud deletion and edit replays enqueue immutable text snapshots for an account-scoped local archive before applying official operations. The overlay never retains a transaction or changes state advancement. The archive is asynchronous, bounded, excluded from backup, and can lose queued snapshots on process termination. It covers explicit deletion/edit updates; bulk history clearing, gap reconciliation, media and secret chats are not archived. Read/privacy gates are opt-in; with them off the original paths execute. See the overlay repository for the feature matrix and validation status.\n"
 
     copies = {CORE + name: ROOT / "Sources" / name for name in ["AyuSettings.swift", "AyuHistoryStore.swift", "AyuHistoryBridge.swift"]}
+    if unsigned:
+        copies["submodules/TelegramUI/Sources/AyuStartupStorage.swift"] = ROOT / "Sources/AyuStartupStorage.swift"
     copies[PEER + "AyuSettingsController.swift"] = ROOT / "Sources/AyuSettingsController.swift"
     copies["Telegram/Telegram-iOS/Telegram.icon/Assets/Plane.svg"] = ROOT / "Sources/AyuMark.svg"
     for path, contents in edits.items():
@@ -132,3 +182,4 @@ if __name__ == "__main__":
     parser.add_argument("--unsigned", action="store_true")
     args = parser.parse_args()
     prepare(args.source.resolve(), args.unsigned)
+
