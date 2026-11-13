@@ -17,6 +17,7 @@ def main():
         "submodules/TelegramCore/Sources/AyuSettings.swift",
         "submodules/TelegramCore/Sources/AyuHistoryStore.swift",
         "submodules/TelegramCore/Sources/AyuHistoryBridge.swift",
+        "submodules/TelegramCore/Sources/AyuMessageRetention.swift",
         "submodules/TelegramUI/Components/PeerInfo/PeerInfoScreen/Sources/AyuSettingsController.swift",
     ]
     for name in added:
