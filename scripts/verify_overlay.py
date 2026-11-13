@@ -24,6 +24,7 @@ PATHS = [
     CORE + "State/Sync/StateReplay+Messages.swift",
     CORE + "State/Sync/UpdateInterpreter+Messages.swift",
     CORE + "State/ServerMessageMerge.swift",
+    CORE + "State/ManagedAutoremoveMessageOperations.swift",
     CORE + "ApiUtils/StoreMessage_Telegram.swift",
     CORE + "Account/AccountManager.swift",
     CORE + "SyncCore/SyncCore_StandaloneAccountTransaction.swift",
