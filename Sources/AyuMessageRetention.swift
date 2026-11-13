@@ -67,6 +67,33 @@ func ayuCloudMediaTimeoutAttribute(timeout: Int32) -> MessageAttribute {
     return AutoclearTimeoutMessageAttribute(timeout: timeout, countdownBeginTime: nil)
 }
 
+/// Upgrade path for timed media already in Postbox before this build was installed.
+/// Replacing the timeout attribute also removes its timestamp-queue entry.
+func ayuRetainTimedMedia(transaction: Transaction, id: MessageId) -> Bool {
+    guard AyuOption.saveDisappearingMedia.enabled, id.namespace == Namespaces.Message.Cloud,
+          let message = transaction.getMessage(id),
+          message.media.contains(where: { $0 is TelegramMediaImage || $0 is TelegramMediaFile }),
+          let timer = message.attributes.first(where: { $0 is AutoclearTimeoutMessageAttribute }) as? AutoclearTimeoutMessageAttribute else { return false }
+    transaction.updateMessage(id, update: { current in
+        let previous = current.attributes.compactMap { $0 as? AyuMessageRetentionAttribute }.first
+        var attributes = current.attributes.filter { !($0 is AutoclearTimeoutMessageAttribute) && !($0 is AyuMessageRetentionAttribute) }
+        attributes.append(AyuMessageRetentionAttribute(deletedAt: previous?.deletedAt, mediaTimeout: timer.timeout))
+        let forward = current.forwardInfo.map {
+            StoreMessageForwardInfo(authorId: $0.author?.id, sourceId: $0.source?.id,
+                sourceMessageId: $0.sourceMessageId, date: $0.date, authorSignature: $0.authorSignature,
+                psaType: $0.psaType, flags: $0.flags)
+        }
+        return .update(StoreMessage(id: current.id, customStableId: nil,
+            globallyUniqueId: current.globallyUniqueId, groupingKey: current.groupingKey,
+            threadId: current.threadId, timestamp: current.timestamp,
+            flags: StoreMessageFlags(current.flags), tags: current.tags,
+            globalTags: current.globalTags, localTags: current.localTags,
+            forwardInfo: forward, authorId: current.author?.id, text: current.text,
+            attributes: attributes, media: current.media))
+    })
+    return true
+}
+
 /// Begin fetching newly received timed media before it can disappear remotely.
 /// Work runs outside the Postbox transaction. Normal MediaBox fetches coalesce
 /// duplicate resource requests; failed downloads are not claimed as saved.
