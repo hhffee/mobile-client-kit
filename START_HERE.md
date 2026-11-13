@@ -1,13 +1,13 @@
 # Следующий шаг: Telegram API-реквизиты
 
-Проект находится в приватном репозитории [hhffee/ayupersonal](https://github.com/hhffee/ayupersonal).
+Проект находится в приватном репозитории [hhffee/mobile-client-kit](https://github.com/hhffee/mobile-client-kit).
 
-1. На [my.telegram.org/apps](https://my.telegram.org/apps) создай приложение: название `Ayu Personal`, short name `ayupersonalclient`, платформа iOS.
-2. Открой [GitHub → Actions secrets](https://github.com/hhffee/ayupersonal/settings/secrets/actions).
+1. На [my.telegram.org/apps](https://my.telegram.org/apps) создай приложение: название `karigram`, short name `ayupersonalclient`, платформа iOS.
+2. Открой [GitHub → Actions secrets](https://github.com/hhffee/mobile-client-kit/settings/secrets/actions).
 3. Нажми **New repository secret** и создай:
    - `TELEGRAM_API_ID` — значение поля `App api_id`;
    - `TELEGRAM_API_HASH` — значение поля `App api_hash`.
-4. После добавления обоих секретов можно запускать workflow **Build Ayu Personal device IPA** на [странице Actions](https://github.com/hhffee/ayupersonal/actions/workflows/build-ios.yml).
+4. После добавления обоих секретов можно запускать workflow **Build karigram device IPA** на [странице Actions](https://github.com/hhffee/mobile-client-kit/actions/workflows/build-ios.yml).
 
 API-реквизиты не записываются в исходники. Сертификат разработчика и пароль от него для облачной сборки не нужны: подпись предполагается выполнить через GBox после сборки.
 
