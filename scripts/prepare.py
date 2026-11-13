@@ -73,14 +73,40 @@ def prepare(source: Path, unsigned: bool = False) -> None:
         gate(path, signature, "return .complete()")
     gate(STATE + "AccountViewTracker.swift", "    public func updateSeenLiveLocationForMessageIds(messageIds: Set<MessageId>) {")
 
-    # Snapshot old cloud text before server edits/deletions. Keep official deletion/replay and
-    # state advancement intact. This is an archive, not resurrected messages in Postbox.
+    # Snapshot text and retain already received cloud bubbles on explicit remote
+    # deletions. Filter ids only inside the replay operation; pts advancement runs
+    # normally, while local user-initiated deletion remains available.
     edit(STATE + "Sync/StateReplay+Messages.swift", "    func applyDeleteMessagesWithGlobalIds(_ ids: [Int32]) {",
-         "    func applyDeleteMessagesWithGlobalIds(_ ids: [Int32]) {\n        ayuCaptureMessages(transaction: transaction, accountPeerId: accountPeerId, ids: transaction.messageIdsForGlobalIds(ids), kind: \"deleted\")")
+         "    func applyDeleteMessagesWithGlobalIds(_ ids: [Int32]) {\n        let localIds = transaction.messageIdsForGlobalIds(ids)\n        ayuCaptureMessages(transaction: transaction, accountPeerId: accountPeerId, ids: localIds, kind: \"deleted\")\n        let retained = Set(ayuRetainDeletedMessages(transaction: transaction, ids: localIds).map { $0.id })\n        let ids = ids.filter { !retained.contains($0) }")
     edit(STATE + "Sync/StateReplay+Messages.swift", "    func applyDeleteMessages(_ ids: [MessageId]) {",
-         "    func applyDeleteMessages(_ ids: [MessageId]) {\n        ayuCaptureMessages(transaction: transaction, accountPeerId: accountPeerId, ids: ids, kind: \"deleted\")")
+         "    func applyDeleteMessages(_ ids: [MessageId]) {\n        ayuCaptureMessages(transaction: transaction, accountPeerId: accountPeerId, ids: ids, kind: \"deleted\")\n        let retained = ayuRetainDeletedMessages(transaction: transaction, ids: ids)\n        let ids = ids.filter { !retained.contains($0) }")
     edit(STATE + "Sync/StateReplay+Messages.swift", "    func applyEditMessage(_ id: MessageId, _ message: StoreMessage) {",
          "    func applyEditMessage(_ id: MessageId, _ message: StoreMessage) {\n        if let previous = transaction.getMessage(id), previous.text != message.text {\n            ayuCaptureMessages(transaction: transaction, accountPeerId: accountPeerId, ids: [id], kind: \"edited\")\n        }")
+    edit(STATE + "Sync/StateReplay+Messages.swift",
+         "        let _ = transaction.addMessages(messages, location: location)",
+         "        let _ = transaction.addMessages(messages, location: location)\n        ayuPrefetchTimedMedia(mediaBox: mediaBox, messages: messages)")
+
+    edit(CORE + "Account/AccountManager.swift",
+         "    declareEncodable(AutoclearTimeoutMessageAttribute.self, f: { AutoclearTimeoutMessageAttribute(decoder: $0) })",
+         "    declareEncodable(AyuMessageRetentionAttribute.self, f: { AyuMessageRetentionAttribute(decoder: $0) })\n    declareEncodable(AutoclearTimeoutMessageAttribute.self, f: { AutoclearTimeoutMessageAttribute(decoder: $0) })")
+    edit(CORE + "SyncCore/SyncCore_StandaloneAccountTransaction.swift",
+         "        mergeMessageAttributes: { previous, updated in",
+         "        mergeMessageAttributes: { previous, updated in\n            if let local = previous.first(where: { $0 is AyuMessageRetentionAttribute }) as? AyuMessageRetentionAttribute {\n                let incoming = updated.first(where: { $0 is AyuMessageRetentionAttribute }) as? AyuMessageRetentionAttribute\n                updated.removeAll(where: { $0 is AyuMessageRetentionAttribute })\n                updated.append(AyuMessageRetentionAttribute(deletedAt: local.deletedAt ?? incoming?.deletedAt, mediaTimeout: local.mediaTimeout ?? incoming?.mediaTimeout))\n            }")
+    # API parsing handles history fetches as well as incoming cloud messages.
+    # Leave secret-chat encryption and its independent expiry policy untouched.
+    api_path = CORE + "ApiUtils/StoreMessage_Telegram.swift"
+    for indent in ("                        ", "                            "):
+        edit(api_path,
+             "\n" + indent + "attributes.append(AutoclearTimeoutMessageAttribute(timeout: expirationTimer, countdownBeginTime: nil))",
+             "\n" + indent + "attributes.append(ayuCloudMediaTimeoutAttribute(timeout: expirationTimer))")
+    edit(STATE + "Sync/UpdateInterpreter+Messages.swift",
+         "                    attributes.append(AutoclearTimeoutMessageAttribute(timeout: expirationTimer, countdownBeginTime: nil))",
+         "                    attributes.append(ayuCloudMediaTimeoutAttribute(timeout: expirationTimer))")
+    edit(STATE + "ServerMessageMerge.swift", "    var updatedMedia = message.media",
+         "    var updatedMedia = message.media\n    if previousMessage.attributes.contains(where: { ($0 as? AyuMessageRetentionAttribute)?.mediaTimeout != nil }), message.media.contains(where: { $0 is TelegramMediaExpiredContent }) {\n        updatedMedia = previousMessage.media\n    }")
+    status_path = "submodules/TelegramUI/Components/Chat/ChatMessageDateAndStatusNode/Sources/StringForMessageTimestampStatus.swift"
+    edit(status_path, "    return dateText\n}",
+         "    if message.attributes.contains(where: { ($0 as? AyuMessageRetentionAttribute)?.deletedAt != nil }) {\n        dateText = \"\\u{1F5D1}\\u{FE0E} \" + dateText\n    }\n    return dateText\n}")
 
     # Hide cached as well as freshly-fetched ads. Reopening the app recreates ad contexts.
     edit(MESSAGES + "AdMessages.swift", "        if messageId == nil {\n            self.state.set(CachedState.getCached",
@@ -177,7 +203,7 @@ def prepare(source: Path, unsigned: bool = False) -> None:
     if (source / docs).exists():
         edits[docs] = (source / docs).read_text(encoding="utf-8") + "\n\n## Personal Ayu overlay\n\nCloud deletion and edit replays enqueue immutable text snapshots for an account-scoped local archive before applying official operations. The overlay never retains a transaction or changes state advancement. The archive is asynchronous, bounded, excluded from backup, and can lose queued snapshots on process termination. It covers explicit deletion/edit updates; bulk history clearing, gap reconciliation, media and secret chats are not archived. Read/privacy gates are opt-in; with them off the original paths execute. See the overlay repository for the feature matrix and validation status.\n"
 
-    copies = {CORE + name: ROOT / "Sources" / name for name in ["AyuSettings.swift", "AyuHistoryStore.swift", "AyuHistoryBridge.swift"]}
+    copies = {CORE + name: ROOT / "Sources" / name for name in ["AyuSettings.swift", "AyuHistoryStore.swift", "AyuHistoryBridge.swift", "AyuMessageRetention.swift"]}
     if unsigned:
         copies["submodules/TelegramUI/Sources/AyuStartupStorage.swift"] = ROOT / "Sources/AyuStartupStorage.swift"
     copies[PEER + "AyuSettingsController.swift"] = ROOT / "Sources/AyuSettingsController.swift"
