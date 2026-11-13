@@ -1,5 +1,7 @@
 # karigram для iOS
 
+Изменения 13 ноября: новая реализация сохранения облачных сообщений в переписке и исчезающих медиа описана в [RETENTION.md](RETENTION.md). Она проходит Swift-проверки, но ещё требует полной сборки и проверки на iPhone. Ниже сохранено описание предыдущего текстового архива; оно не описывает новые возможности.
+
 **Статус: исходники в разработке. IPA не собран. Полный перенос AyuGram не завершён.**
 
 Личный неофициальный клиент на базе Telegram iOS. Это набор исходников и воспроизводимых изменений к закреплённому upstream, а не официальный AyuGram для iOS.
@@ -72,3 +74,4 @@ python scripts/verify_overlay.py upstream/Telegram-iOS
 Функции сверялись с https://docs.ayugram.one/android/, https://docs.ayugram.one/desktop/, https://github.com/AyuGram/AyuGram4A и https://github.com/AyuGram/AyuGramDesktop. Официальная документация указывает отсутствие публичного AyuGram iOS: https://docs.ayugram.one/downloads/.
 
 База: https://github.com/TelegramMessenger/Telegram-iOS, commit указан в `upstream.lock.json`. Лицензии исходного Telegram и зависимостей сохраняются; при распространении производного клиента необходимо выполнить их условия. Ключи официальных клиентов не копируются.
+
