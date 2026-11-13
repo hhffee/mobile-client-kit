@@ -2,7 +2,7 @@ import Foundation
 
 /// Installation-wide preferences. Message archives are always separated by account.
 public enum AyuOption: String, CaseIterable {
-    case hideOnline, hideTyping, hideReadReceipts, saveDeleted, saveEdits, hideAds
+    case hideOnline, hideTyping, hideReadReceipts, saveDeleted, saveEdits, hideAds, saveDisappearingMedia
 
     public var enabled: Bool {
         let key = "personal.ayu.\(self.rawValue)"
@@ -10,7 +10,7 @@ public enum AyuOption: String, CaseIterable {
             return value
         }
         switch self {
-        case .saveDeleted, .saveEdits, .hideAds: return true
+        case .saveDeleted, .saveEdits, .hideAds, .saveDisappearingMedia: return true
         default: return false
         }
     }
@@ -19,3 +19,4 @@ public enum AyuOption: String, CaseIterable {
         UserDefaults.standard.set(value, forKey: "personal.ayu.\(self.rawValue)")
     }
 }
+
