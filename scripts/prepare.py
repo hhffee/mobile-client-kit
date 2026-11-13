@@ -84,7 +84,7 @@ def prepare(source: Path, unsigned: bool = False) -> None:
 
     # Hide cached as well as freshly-fetched ads. Reopening the app recreates ad contexts.
     edit(MESSAGES + "AdMessages.swift", "        if messageId == nil {\n            self.state.set(CachedState.getCached",
-         "        if !AyuOption.hideAds.enabled && messageId == nil {\n            self.state.set(CachedState.getCached")
+         "        if AyuOption.hideAds.enabled {\n            // Property observers do not run during init; publish even in manual activation mode.\n            self.state.set(.single(State(interPostInterval: nil, messages: [])))\n        } else if messageId == nil {\n            self.state.set(CachedState.getCached")
     edit(MESSAGES + "AdMessages.swift", "    func activate() {\n        if self.isActivated {",
          "    func activate() {\n        if AyuOption.hideAds.enabled {\n            self.stateValue = State(interPostInterval: nil, messages: [])\n            return\n        }\n        if self.isActivated {")
 
