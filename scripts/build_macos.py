@@ -15,6 +15,21 @@ def run(args, cwd=None, env=None):
     subprocess.run([str(arg) for arg in args], cwd=cwd, env=env, check=True)
 
 
+def configure_unsigned_packaging(source):
+    # Pinned rules_apple embeds the device profile in a separate partial even when
+    # legacy signing is disabled. Skip that partial only for the explicit unsigned
+    # feature; normal signed device builds retain their required profile checks.
+    path = source / "build-system/bazel-rules/rules_apple/apple/internal/ios_rules.bzl"
+    text = path.read_text(encoding="utf-8")
+    old = "    if platform_prerequisites.platform.is_device:\n        processor_partials.append(\n            partials.provisioning_profile_partial("
+    new = old.replace(".is_device:", '.is_device and "disable_legacy_signing" not in features:')
+    if text.count(new) == 6 and text.count(old) == 0:
+        return
+    if text.count(old) != 6:
+        raise SystemExit("Unexpected rules_apple profile embedding sites; refusing an unverified patch")
+    path.write_text(text.replace(old, new), encoding="utf-8", newline="\n")
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--source", type=Path, default=ROOT / "upstream/Telegram-iOS")
@@ -49,6 +64,7 @@ def main():
             raise SystemExit("Existing overlay is incompatible; use a fresh --source directory.")
     else:
         run([sys.executable, ROOT / "scripts/prepare.py", source, "--unsigned"])
+    configure_unsigned_packaging(source)
     build_number = os.environ.get("GITHUB_RUN_NUMBER", "1")
     if not build_number.isdigit():
         raise SystemExit("Build number must be numeric")
