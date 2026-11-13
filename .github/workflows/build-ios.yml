@@ -1,4 +1,4 @@
-name: Build Ayu Personal device IPA
+name: Build karigram device IPA
 on:
   workflow_dispatch:
 permissions:
@@ -34,8 +34,8 @@ jobs:
       - name: Upload device build
         uses: actions/upload-artifact@v4
         with:
-          name: AyuPersonal-unsigned-IPA
-          path: dist/AyuPersonal-unsigned.ipa
+          name: karigram-unsigned-IPA
+          path: dist/karigram-unsigned.ipa
           if-no-files-found: error
           retention-days: 7
 
