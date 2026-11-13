@@ -106,6 +106,21 @@ def prepare(source: Path, unsigned: bool = False) -> None:
     if unsigned:
         app_delegate = "submodules/TelegramUI/Sources/AppDelegate.swift"
         passcode = "submodules/PasscodeCore/Sources/Passcode.swift"
+        edit(app_delegate, "        self.nativeWindow = window\n",
+             "        self.nativeWindow = window\n        AyuStartupStorage.begin(in: window)\n")
+        for anchor, stage in [
+            ('        let appGroupName = "group.\\(baseAppBundleId)"\n        try! PasscodeEnvironment', "secure-storage"),
+            ("        let deviceSpecificEncryptionParameters = BuildConfig.deviceSpecificEncryptionParameters", "database-key"),
+            ("        self.accountManager = accountManager", "account-manager-open"),
+            ("        let sharedContextSignal = currentPresentationDataAndSettings", "presentation-settings"),
+            ("            let sharedContext = SharedAccountContextImpl", "shared-context"),
+        ]:
+            edit(app_delegate, anchor, '        AyuStartupStorage.mark("' + stage + '")\n' + anchor)
+        for anchor in [
+            "                    self.mainWindow.viewController = context.rootController",
+            "                    self.mainWindow.present(context.rootController, on: .root)",
+        ]:
+            edit(app_delegate, anchor, anchor + "\n                    AyuStartupStorage.finish()")
         # This build has no extensions. Preserve the upstream shared-container
         # path when entitled; otherwise select a stable app-private container.
         edit(app_delegate,
