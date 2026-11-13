@@ -104,6 +104,9 @@ def prepare(source: Path, unsigned: bool = False) -> None:
          "                    attributes.append(ayuCloudMediaTimeoutAttribute(timeout: expirationTimer))")
     edit(STATE + "ServerMessageMerge.swift", "    var updatedMedia = message.media",
          "    var updatedMedia = message.media\n    if previousMessage.attributes.contains(where: { ($0 as? AyuMessageRetentionAttribute)?.mediaTimeout != nil }), message.media.contains(where: { $0 is TelegramMediaExpiredContent }) {\n        updatedMedia = previousMessage.media\n    }")
+    edit(STATE + "ManagedAutoremoveMessageOperations.swift",
+         "                    if let message = transaction.getMessage(entry.messageId) {",
+         "                    if !isRemove && ayuRetainTimedMedia(transaction: transaction, id: entry.messageId) {\n                        return\n                    }\n                    if let message = transaction.getMessage(entry.messageId) {")
     status_path = "submodules/TelegramUI/Components/Chat/ChatMessageDateAndStatusNode/Sources/StringForMessageTimestampStatus.swift"
     edit(status_path, "    return dateText\n}",
          "    if message.attributes.contains(where: { ($0 as? AyuMessageRetentionAttribute)?.deletedAt != nil }) {\n        dateText = \"\\u{1F5D1}\\u{FE0E} \" + dateText\n    }\n    return dateText\n}")
