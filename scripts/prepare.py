@@ -5,6 +5,8 @@ import argparse
 import json
 from pathlib import Path
 import subprocess
+import shutil
+import struct
 
 ROOT = Path(__file__).resolve().parents[1]
 CORE = "submodules/TelegramCore/Sources/"
@@ -112,6 +114,12 @@ def prepare(source: Path, unsigned: bool = False) -> None:
          "    if message.attributes.contains(where: { ($0 as? AyuMessageRetentionAttribute)?.deletedAt != nil }) {\n        dateText = \"\\u{1F5D1}\\u{FE0E} \" + dateText\n    }\n    return dateText\n}")
 
     # Hide cached as well as freshly-fetched ads. Reopening the app recreates ad contexts.
+    edit("submodules/TelegramUI/Sources/ChatControllerNode.swift",
+         "        if let displayAdPeer {\n            self.adMessagesContext = context.engine.messages.adMessages",
+         "        if let displayAdPeer, !AyuOption.hideAds.enabled {\n            self.adMessagesContext = context.engine.messages.adMessages")
+    edit(MESSAGES + "AdMessages.swift",
+         "    public var state: Signal<(interPostInterval: Int32?, messages: [Message], startDelay: Int32?, betweenDelay: Int32?), NoError> {\n        return Signal { subscriber in",
+         "    public var state: Signal<(interPostInterval: Int32?, messages: [Message], startDelay: Int32?, betweenDelay: Int32?), NoError> {\n        if AyuOption.hideAds.enabled { return .single((nil, [], nil, nil)) }\n        return Signal { subscriber in")
     edit(MESSAGES + "AdMessages.swift", "        if messageId == nil {\n            self.state.set(CachedState.getCached",
          "        if AyuOption.hideAds.enabled {\n            // Property observers do not run during init; publish even in manual activation mode.\n            self.state.set(.single(State(interPostInterval: nil, messages: [])))\n        } else if messageId == nil {\n            self.state.set(CachedState.getCached")
     edit(MESSAGES + "AdMessages.swift", "    func activate() {\n        if self.isActivated {",
@@ -131,6 +139,25 @@ def prepare(source: Path, unsigned: bool = False) -> None:
     edit(icon, "display-p3:0.21569,0.68627,0.89020,1.00000", "display-p3:0.58039,0.32549,0.92157,1.00000")
     edit(icon, "srgb:0.11373,0.57647,0.82353,1.00000", "srgb:0.29020,0.16078,0.60784,1.00000")
     edit(icon, "srgb:0.00000,0.47843,1.00000,1.00000", "srgb:0.44314,0.26275,0.82745,1.00000")
+    portrait_path = ROOT / "Sources/Assets/Reze-icon.png"
+    portrait = portrait_path.read_bytes()
+    if portrait[:8] != b"\x89PNG\r\n\x1a\n":
+        raise ValueError("Reze icon must be a PNG")
+    width, height = struct.unpack(">II", portrait[16:24])
+    if width != height or width < 1024:
+        raise ValueError("Reze icon must be square and at least 1024 pixels")
+    icon_data = json.loads(edits[icon])
+    group = icon_data["groups"][0]
+    group["layers"] = [{
+        "name": "Reze", "image-name": "Reze.png", "glass": False,
+        "position-specializations": [{"value": {"scale": 1024 / width, "translation-in-points": [0, 0]}}]
+    }]
+    group.pop("blur-material", None)
+    group.pop("shadow", None)
+    group.pop("position-specializations", None)
+    group["specular"] = False
+    icon_data["groups"] = [group]
+    edits[icon] = json.dumps(icon_data, ensure_ascii=False, indent=2) + "\n"
 
     if unsigned:
         app_delegate = "submodules/TelegramUI/Sources/AppDelegate.swift"
@@ -210,12 +237,12 @@ def prepare(source: Path, unsigned: bool = False) -> None:
     if unsigned:
         copies["submodules/TelegramUI/Sources/AyuStartupStorage.swift"] = ROOT / "Sources/AyuStartupStorage.swift"
     copies[PEER + "AyuSettingsController.swift"] = ROOT / "Sources/AyuSettingsController.swift"
-    copies["Telegram/Telegram-iOS/Telegram.icon/Assets/Plane.svg"] = ROOT / "Sources/AyuMark.svg"
+    copies["Telegram/Telegram-iOS/Telegram.icon/Assets/Reze.png"] = portrait_path
     for path, contents in edits.items():
         (source / path).write_text(contents, encoding="utf-8", newline="\n")
     for destination, origin in copies.items():
         (source / destination).parent.mkdir(parents=True, exist_ok=True)
-        (source / destination).write_text(origin.read_text(encoding="utf-8"), encoding="utf-8", newline="\n")
+        shutil.copyfile(origin, source / destination)
     (source / ".ayu-overlay.json").write_text(json.dumps({"upstream": head, "unsigned": unsigned}, indent=2), encoding="utf-8")
     print(f"Applied overlay: {len(edits)} edited files, {len(copies)} added files; upstream {head}")
 
