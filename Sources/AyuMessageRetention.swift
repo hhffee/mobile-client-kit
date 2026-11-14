@@ -27,6 +27,8 @@ public final class AyuMessageRetentionAttribute: MessageAttribute {
 /// Only preserve messages already present on this device. Keep their real id,
 /// author, timestamp, grouping and media so existing bubbles and viewers apply.
 func ayuRetainDeletedMessages(transaction: Transaction, ids: [MessageId]) -> Set<MessageId> {
+    AyuLocalDiagnostics.increment("deleteRequested", by: ids.count)
+    AyuLocalDiagnostics.increment("deleteFound", by: ids.filter { transaction.getMessage($0) != nil }.count)
     guard AyuOption.saveDeleted.enabled else { return [] }
     var retained = Set<MessageId>()
     for id in Set(ids) {
@@ -54,6 +56,7 @@ func ayuRetainDeletedMessages(transaction: Transaction, ids: [MessageId]) -> Set
         })
         retained.insert(id)
     }
+    AyuLocalDiagnostics.increment("deleteRetained", by: retained.count)
     return retained
 }
 
