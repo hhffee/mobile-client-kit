@@ -59,7 +59,9 @@ final class AyuSettingsController: UITableViewController {
             cell.textLabel?.textColor = indexPath.row == 0 ? .label : .systemRed
             cell.accessoryType = indexPath.row == 0 ? .disclosureIndicator : .none
         } else {
-            cell.textLabel?.text = "karigram · версия разработки"
+            let version = Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion") as? String ?? "unknown"
+            cell.textLabel?.text = "karigram · сборка \(version)"
+            cell.detailTextLabel?.text = AyuLocalDiagnostics.summary
             cell.selectionStyle = .none
         }
         return cell
