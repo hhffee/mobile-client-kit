@@ -13,6 +13,7 @@ CORE = "submodules/TelegramCore/Sources/"
 PEER = "submodules/TelegramUI/Components/PeerInfo/PeerInfoScreen/Sources/"
 PATHS = [
     "submodules/TelegramUI/Sources/AppDelegate.swift", "submodules/PasscodeCore/Sources/Passcode.swift",
+    "submodules/TelegramUI/Sources/ChatControllerNode.swift",
     "build-system/Make/Make.py", "docs/state-sync.md", "Telegram/BUILD",
     "Telegram/Telegram-iOS/Telegram.icon/icon.json",
     CORE + "State/ManagedAccountPresence.swift",
