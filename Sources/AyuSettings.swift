@@ -20,3 +20,20 @@ public enum AyuOption: String, CaseIterable {
     }
 }
 
+/// Local counters contain no message text, identifiers or account credentials.
+public enum AyuLocalDiagnostics {
+    private static let lock = NSLock()
+    public static func increment(_ name: String, by count: Int) {
+        lock.lock()
+        defer { lock.unlock() }
+        let key = "karigram.diagnostics." + name
+        UserDefaults.standard.set(UserDefaults.standard.integer(forKey: key) + count, forKey: key)
+    }
+    public static var summary: String {
+        lock.lock()
+        defer { lock.unlock() }
+        let defaults = UserDefaults.standard
+        return "Удалений получено: \(defaults.integer(forKey: "karigram.diagnostics.deleteRequested"))\nСообщений найдено: \(defaults.integer(forKey: "karigram.diagnostics.deleteFound"))\nОставлено в чате: \(defaults.integer(forKey: "karigram.diagnostics.deleteRetained"))\nСохранение включено: \(AyuOption.saveDeleted.enabled ? "да" : "нет")"
+    }
+}
+
