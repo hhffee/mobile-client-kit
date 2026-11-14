@@ -1,0 +1,1 @@
+Reze portrait icon: ImageGen adaptation of the official character artwork from https://www.chainsawman.dog/movie_reze/assets/img/chara/chara_9_stand.png . Original artwork and character rights remain with their respective owners. Added at the user's request.
